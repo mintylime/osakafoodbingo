@@ -1,2 +1,2 @@
 # osakafoodbingo
-Osaka Food Bingo
+[Osaka Food Bingo](https://mintylime.github.io/osakafoodbingo/)
