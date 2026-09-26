@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Osaka Food Bingo</title>
+  <style>
+    :root {
+      --bg: #121212;
+      --card-bg: #1e1e1e;
+      --accent: #ff4757;
+      --checked-bg: #2ed573;
+      --text: #ffffff;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 20px;
+      margin: 0;
+    }
+    h1 { color: var(--accent); margin-bottom: 5px; }
+    p { margin-top: 0; opacity: 0.8; font-size: 0.95rem; }
+    
+    .status-banner {
+      background: #2f3542;
+      color: #eccc68;
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-size: 0.85rem;
+      margin-bottom: 10px;
+      display: none;
+    }
+
+    .bingo-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 10px;
+      max-width: 600px;
+      width: 100%;
+      margin-top: 10px;
+    }
+    .tile {
+      background: var(--card-bg);
+      border: 2px solid #333;
+      border-radius: 8px;
+      aspect-ratio: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 8px;
+      font-size: 0.85rem;
+      cursor: pointer;
+      user-select: none;
+      transition: all 0.2s ease;
+    }
+    .tile:hover { border-color: var(--accent); }
+    .tile.checked {
+      background: var(--checked-bg);
+      color: #000;
+      font-weight: bold;
+      border-color: #7bed9f;
+    }
+    .tile.free {
+      border-color: var(--accent);
+    }
+    .controls {
+      margin-top: 25px;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    button {
+      background: var(--card-bg);
+      color: var(--text);
+      border: 1px solid #444;
+      padding: 10px 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 500;
+    }
+    button:hover { background: #333; }
+    button.primary {
+      background: var(--accent);
+      border-color: var(--accent);
+    }
+    button.primary:hover {
+      background: #ff6b81;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Osaka Food Bingo</h1>
+  <p id="sub-heading">Tap items to mark off what you've eaten!</p>
+
+  <div id="banner" class="status-banner">Viewing a shared board</div>
+
+  <div class="bingo-grid" id="grid"></div>
+
+  <div class="controls">
+    <button class="primary" onclick="shareProgress()">Share My Progress Link</button>
+    <button id="reset-btn" onclick="resetBoard()">Reset My Board</button>
+    <button id="my-board-btn" style="display:none;" onclick="loadMyBoard()">Back to My Board</button>
+  </div>
+
+  <script>
+    const items = [
+      "Takoyaki", "Kushikatsu", "Okonomiyaki", "Kitsune Udon", "551 Horai",
+      "Doteyaki", "Taikoyaki", "Ika-yaki", "Teppanyaki", "Rikuro Ojisan",
+      "Pork Tama", "Tecchiri", "FREE SPACE", "Osaka Yakisoba", "Mitarashi Dango",
+      "Kasu Udon", "Beni Shoga Ten", "Modan-yaki", "Horumon-yaki", "Mix Juice",
+      "Tonpei-yaki", "Akashiyaki", "Osaka Curry", "Dohtonbori Ramen", "Glico Snack"
+    ];
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const sharedData = urlParams.get('share');
+
+    let isSharedMode = false;
+    let checkedSet = new Set([12]); // Default FREE SPACE
+
+    if (sharedData !== null) {
+      // 1. READ-ONLY MODE: Viewing someone else's shared link
+      isSharedMode = true;
+      const indices = sharedData ? sharedData.split(',').map(Number) : [];
+      checkedSet = new Set(indices);
+    } else {
+      // 2. PERSONAL MODE: Load user's local progress
+      const saved = localStorage.getItem('my_osaka_bingo_progress');
+      if (saved) {
+        checkedSet = new Set(JSON.parse(saved));
+      }
+    }
+
+    const grid = document.getElementById('grid');
+    const banner = document.getElementById('banner');
+    const resetBtn = document.getElementById('reset-btn');
+    const myBoardBtn = document.getElementById('my-board-btn');
+    const subHeading = document.getElementById('sub-heading');
+
+    function render() {
+      grid.innerHTML = '';
+
+      if (isSharedMode) {
+        banner.style.display = 'block';
+        banner.textContent = " You're viewing a shared progress board!";
+        subHeading.textContent = "Here is what has been checked off on this shared list:";
+        resetBtn.style.display = 'none';
+        myBoardBtn.style.display = 'inline-block';
+      } else {
+        banner.style.display = 'none';
+        subHeading.textContent = "Tap items to mark off what you've eaten!";
+        resetBtn.style.display = 'inline-block';
+        myBoardBtn.style.display = 'none';
+      }
+
+      items.forEach((item, idx) => {
+        const tile = document.createElement('div');
+        tile.className = `tile ${checkedSet.has(idx) ? 'checked' : ''} ${idx === 12 ? 'free' : ''}`;
+        tile.textContent = item;
+        
+        // Disable tile toggling if viewing a shared link
+        tile.onclick = () => {
+          if (!isSharedMode) {
+            toggleTile(idx);
+          } else {
+            alert("You are in view mode! Click 'Back to My Board' to edit your own list.");
+          }
+        };
+
+        grid.appendChild(tile);
+      });
+    }
+
+    function toggleTile(idx) {
+      if (checkedSet.has(idx)) {
+        checkedSet.delete(idx);
+      } else {
+        checkedSet.add(idx);
+      }
+      localStorage.setItem('my_osaka_bingo_progress', JSON.stringify(Array.from(checkedSet)));
+      render();
+    }
+
+    function shareProgress() {
+      let indicesToShare = Array.from(checkedSet);
+      
+      // If sharing while in personal mode, pull from local storage
+      if (!isSharedMode) {
+        const saved = localStorage.getItem('my_osaka_bingo_progress');
+        if (saved) {
+          indicesToShare = JSON.parse(saved);
+        }
+      }
+
+      const baseUrl = window.location.origin + window.location.pathname;
+      const shareUrl = `${baseUrl}?share=${indicesToShare.join(',')}`;
+
+      navigator.clipboard.writeText(shareUrl).then(() => {
+        alert("Progress link copied to clipboard! Send this URL to your friend.");
+      }).catch(() => {
+        prompt("Copy this URL to share your progress:", shareUrl);
+      });
+    }
+
+    function loadMyBoard() {
+      // Clear URL params and reload personal mode
+      window.location.href = window.location.origin + window.location.pathname;
+    }
+
+    function resetBoard() {
+      if (confirm('Clear all your progress?')) {
+        checkedSet = new Set([12]);
+        localStorage.removeItem('my_osaka_bingo_progress');
+        render();
+      }
+    }
+
+    render();
+  </script>
+</body>
+</html>
