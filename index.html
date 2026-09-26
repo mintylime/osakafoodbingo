@@ -2,16 +2,23 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
   <title>Osaka Food Bingo</title>
   <style>
     :root {
       --bg: #121212;
       --card-bg: #1e1e1e;
       --accent: #ff4757;
-      --checked-bg: #2ed573;
+      --checked-color: #2ed573;
       --text: #ffffff;
     }
+
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       background: var(--bg);
@@ -19,119 +26,257 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      padding: 20px;
+      padding: 12px 8px;
       margin: 0;
+      min-height: 100vh;
     }
-    h1 { color: var(--accent); margin-bottom: 5px; }
-    p { margin-top: 0; opacity: 0.8; font-size: 0.95rem; }
-    
+
+    h1 { 
+      color: var(--accent); 
+      margin: 5px 0 2px 0; 
+      font-size: 1.5rem;
+      text-align: center;
+    }
+
     .status-banner {
       background: #2f3542;
       color: #eccc68;
-      padding: 8px 16px;
+      padding: 6px 12px;
       border-radius: 20px;
-      font-size: 0.85rem;
-      margin-bottom: 10px;
+      font-size: 0.8rem;
+      margin-bottom: 8px;
       display: none;
+      text-align: center;
     }
 
+    /* Top Controls Bar */
+    .top-controls {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 12px;
+      justify-content: center;
+      width: 100%;
+      max-width: 500px;
+    }
+
+    .toggle-btn {
+      background: #2a2a2a;
+      color: #ddd;
+      border: 1px solid #444;
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      cursor: pointer;
+      font-weight: 600;
+    }
+
+    .toggle-btn.active {
+      background: var(--accent);
+      color: #fff;
+      border-color: var(--accent);
+    }
+
+    /* Grid Layout */
     .bingo-grid {
       display: grid;
       grid-template-columns: repeat(5, 1fr);
-      gap: 10px;
-      max-width: 600px;
+      gap: 6px;
       width: 100%;
-      margin-top: 10px;
+      max-width: 500px;
     }
+
+    /* Individual Tile Setup */
     .tile {
+      position: relative;
       background: var(--card-bg);
       border: 2px solid #333;
       border-radius: 8px;
       aspect-ratio: 1;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      text-align: center;
-      padding: 8px;
-      font-size: 0.85rem;
+      overflow: hidden;
       cursor: pointer;
       user-select: none;
-      transition: all 0.2s ease;
-    }
-    .tile:hover { border-color: var(--accent); }
-    .tile.checked {
-      background: var(--checked-bg);
-      color: #000;
-      font-weight: bold;
-      border-color: #7bed9f;
-    }
-    .tile.free {
-      border-color: var(--accent);
-    }
-    .controls {
-      margin-top: 25px;
+      touch-action: manipulation;
       display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
+      align-items: center;
       justify-content: center;
     }
-    button {
+
+    /* Image inside tile */
+    .tile img {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover; /* Automatically resizes and clips image without distorting */
+      opacity: 0.85;
+      transition: opacity 0.2s ease, transform 0.2s ease;
+    }
+
+    .hide-images .tile img {
+      display: none; /* Hidden when user turns off images */
+    }
+
+    /* Text Overlay */
+    .tile-text {
+      position: relative;
+      z-index: 2;
+      padding: 3px;
+      text-align: center;
+      font-size: clamp(0.55rem, 2.2vw, 0.8rem);
+      font-weight: 700;
+      line-height: 1.1;
+      color: #ffffff;
+      text-shadow: 0px 1px 4px rgba(0,0,0,0.9), 0px 0px 2px rgba(0,0,0,1);
+    }
+
+    /* Text-Only Mode Styles */
+    .hide-images .tile-text {
+      text-shadow: none;
+      color: var(--text);
+      font-weight: 600;
+    }
+
+    /* Checked State */
+    .tile.checked {
+      border-color: var(--checked-color);
+    }
+
+    /* Checked Indicator Badge */
+    .tile.checked::after {
+      content: "✓";
+      position: absolute;
+      top: 3px;
+      right: 4px;
+      z-index: 3;
+      background: var(--checked-color);
+      color: #000;
+      font-weight: 900;
+      font-size: 0.7rem;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.5);
+    }
+
+    .tile.checked img {
+      opacity: 0.4; /* Darkens photo slightly so checkmark pops */
+      filter: grayscale(30%);
+    }
+
+    .tile.checked .tile-text {
+      color: #7bed9f;
+    }
+
+    .hide-images .tile.checked {
+      background: #1e3a29;
+    }
+
+    /* Bottom Buttons */
+    .controls {
+      margin-top: 16px;
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: center;
+      width: 100%;
+      max-width: 500px;
+    }
+
+    .action-btn {
       background: var(--card-bg);
       color: var(--text);
       border: 1px solid #444;
-      padding: 10px 16px;
-      border-radius: 6px;
+      padding: 10px 14px;
+      border-radius: 8px;
       cursor: pointer;
-      font-weight: 500;
+      font-weight: 600;
+      font-size: 0.85rem;
+      flex: 1 1 auto;
+      min-width: 130px;
+      touch-action: manipulation;
     }
-    button:hover { background: #333; }
-    button.primary {
+
+    .action-btn.primary {
       background: var(--accent);
       border-color: var(--accent);
-    }
-    button.primary:hover {
-      background: #ff6b81;
     }
   </style>
 </head>
 <body>
 
   <h1>Osaka Food Bingo</h1>
-  <p id="sub-heading">Tap items to mark off what you've eaten!</p>
 
   <div id="banner" class="status-banner">Viewing a shared board</div>
+
+  <!-- Top Display Toggles -->
+  <div class="top-controls">
+    <button class="toggle-btn" id="lang-btn" onclick="toggleLanguage()">Language: EN</button>
+    <button class="toggle-btn active" id="img-btn" onclick="toggleImages()">Images: ON</button>
+  </div>
 
   <div class="bingo-grid" id="grid"></div>
 
   <div class="controls">
-    <button class="primary" onclick="shareProgress()">Share My Progress Link</button>
-    <button id="reset-btn" onclick="resetBoard()">Reset My Board</button>
-    <button id="my-board-btn" style="display:none;" onclick="loadMyBoard()">Back to My Board</button>
+    <button class="action-btn primary" onclick="shareProgress()">Share My Link</button>
+    <button class="action-btn" id="reset-btn" onclick="resetBoard()">Reset Board</button>
+    <button class="action-btn" id="my-board-btn" style="display:none;" onclick="loadMyBoard()">Back to My Board</button>
   </div>
 
   <script>
+    // =========================================================================
+    // EASY CONFIGURATION: Paste your image URLs inside "img" below.
+    // =========================================================================
     const items = [
-      "Takoyaki", "Kushikatsu", "Okonomiyaki", "Kitsune Udon", "551 Horai",
-      "Doteyaki", "Taikoyaki", "Ika-yaki", "Teppanyaki", "Rikuro Ojisan",
-      "Pork Tama", "Tecchiri", "FREE SPACE", "Osaka Yakisoba", "Mitarashi Dango",
-      "Kasu Udon", "Beni Shoga Ten", "Modan-yaki", "Horumon-yaki", "Mix Juice",
-      "Tonpei-yaki", "Akashiyaki", "Osaka Curry", "Dohtonbori Ramen", "Glico Snack"
+      { en: "Takoyaki", jp: "たこ焼き", img: "https://encrypted-tbn1.gstatic.com/licensed-image?q=tbn:ANd9GcTgMf4KXTV-Sw_YGbAC3mOem17ddoXTaHFWnl-u5MSvFC2SCMarSmEx2K8w7VVl_dDo0FFU1ZMIX1UWzLM" },
+      { en: "Kushikatsu", jp: "串カツ", img: "https://encrypted-tbn3.gstatic.com/licensed-image?q=tbn:ANd9GcRLV-72Or7yjutSvAeBDYKlyqEqo-AMF90BtQJVIwuUGGLxgZgs2eK34ODoXYh6PkWcD8Ib5C7KEg3xW4c" },
+      { en: "Okonomiyaki", jp: "お好み焼き", img: "https://encrypted-tbn1.gstatic.com/licensed-image?q=tbn:ANd9GcQU4jKtoegcyAnhfoEuOipJ2L6Sh2m0b3tyiG4N4jNwbawVvJCVSmmMpWxpzLNMfMX37JBMuHuK913Lcf4" },
+      { en: "Kitsune Udon", jp: "きつねうどん", img: "https://encrypted-tbn2.gstatic.com/licensed-image?q=tbn:ANd9GcQNc2uEfntpn80g9G5CZTtTigJU5IrIPGxxxqGAE6dSG6wMN7rlhiaGm_pQ3gV-Qwmd6OMjSaNmLUiFglA" },
+      { en: "551 Horai", jp: "551 豚まん", img: "https://encrypted-tbn1.gstatic.com/licensed-image?q=tbn:ANd9GcSF9GRLBhaxX_2PqmUV4-RDBWGW5JPWrIL3A1xRJvplPwfAKp1pp44G_PPD1ADurrIdqREf9OM3PustDKU" },
+
+      { en: "Doteyaki", jp: "どて焼き", img: "https://encrypted-tbn2.gstatic.com/licensed-image?q=tbn:ANd9GcRo4hQVfZOcDMVOf-pP_zHzydNB7zu3x2wWeok8136Rr8HNLA0YO3ky6HlvuDusq-TfqHr-HSb8fWqJwYo" },
+      { en: "Taikoyaki", jp: "太鼓焼き", img: "https://encrypted-tbn3.gstatic.com/licensed-image?q=tbn:ANd9GcQtGwx_bfr1aOgKqtzZtvPpvUFeMyQCkffesRk35a3ksnnSuiyvI2tanMou8CxVYap2msXppnNe-lSj3Fc" },
+      { en: "Ika-yaki", jp: "いか焼き", img: "https://encrypted-tbn0.gstatic.com/licensed-image?q=tbn:ANd9GcR0iGbmFTsKNMQsHkfXnkoBnL-Nt0_M4hUU6j3ysJGhgfq_JksE8ScyqSsbAfqUVJTfCVi_oM_Yopo8xi0" },
+      { en: "Teppanyaki", jp: "鉄板焼き", img: "https://encrypted-tbn1.gstatic.com/licensed-image?q=tbn:ANd9GcRXypoe5Xk1FfK0RNI28R4WIGtWID78ZZO0kR5JVqDXExVIhzmwpLHooMgRZ58xH2Qgom7jCmzR4i3SqMc" },
+      { en: "Rikuro Ojisan", jp: "りくろーおじさん", img: "https://encrypted-tbn0.gstatic.com/licensed-image?q=tbn:ANd9GcSnNc1dk9fuyAyuWND7VlFZFN5myO2jSCGfHabg9_qoszlSya8AWMc_4ZVglEuJVhi7G_xYBpCRpkRjJvc" },
+
+      { en: "Pork Tama", jp: "豚玉", img: "https://encrypted-tbn0.gstatic.com/licensed-image?q=tbn:ANd9GcQ2oM0zJcdkv2Rs6th4RVcm1VzQC-N2W-sUyqjLNf_VXuvRgyN5ApMRMGv_BWF_EvC5O6Mi8RfyN0sA7ic" },
+      { en: "Tecchiri", jp: "てっちり", img: "https://encrypted-tbn2.gstatic.com/licensed-image?q=tbn:ANd9GcRwbInMriU1-YpolG2EdtOVmCQscbsmY0oz5yicXscPW2T2_DuZxf-gS3Y4KPYb1W7IyuY21LSLz1zCrvQ" },
+      { en: "FREE SPACE", jp: "フリー", img: "https://encrypted-tbn1.gstatic.com/licensed-image?q=tbn:ANd9GcSD-Smk4DlXPL-UbuoBaapCEEzYOXdpp1XNyPwDhCN5AfDTcEkAlVrD1SE6zVy4tOdVEvyk4XZWb3b_GLw" },
+      { en: "Osaka Yakisoba", jp: "大阪焼きそば", img: "https://encrypted-tbn2.gstatic.com/licensed-image?q=tbn:ANd9GcRVK44ClTJwglL451ZExRFSCeaEGEyBCn5U7hRyyHf9OlluPsKz1i3XfS9D11WmvkCzrNuT87vAqYYVkBE" },
+      { en: "Mitarashi Dango", jp: "みたらし団子", img: "https://encrypted-tbn2.gstatic.com/licensed-image?q=tbn:ANd9GcSVosYlRU2iGYddDzex3bxyCIaP8UyFUEeNqfZIJ0UtAWIDMq3dHGVGJqFNujl7W-o-7-ttb0l2oW2o1l8" },
+
+      { en: "Kasu Udon", jp: "かすうどん", img: "https://encrypted-tbn0.gstatic.com/licensed-image?q=tbn:ANd9GcRbY8gWyDwYo_V0JQEUjymVn9UloX6KK2pbTWacH3UcgtmfFHfotTrU6yyR5aoQ3xKRJrPIRyY9u4a3oHQ" },
+      { en: "Beni Shoga Ten", jp: "紅生姜天", img: "https://www.maff.go.jp/e/policies/market/k_ryouri/assets/uploads/2024/02/osaka_30_1.jpg" },
+      { en: "Modan-yaki", jp: "モダン焼き", img: "https://encrypted-tbn0.gstatic.com/licensed-image?q=tbn:ANd9GcT1j7QnztZejA8zJJ1PFwbDSkkG4V6h41rPEWpti2OCKAcbziXecb3ZnJ-rwiwGg1u5KbjaOUjwPpoOeKU" },
+      { en: "Horumon-yaki", jp: "ホルモン焼き", img: "https://encrypted-tbn0.gstatic.com/licensed-image?q=tbn:ANd9GcRo77hQsFvz9CnxXgh3ZbrlMAMbrWMX8gX4WrpoyAXV8n5WIcg6VHp1ZOfS07WcH3So7DOzGA_uMel-RYQ" },
+      { en: "Mix Juice", jp: "ミックスジュース", img: "https://encrypted-tbn1.gstatic.com/licensed-image?q=tbn:ANd9GcSD-Smk4DlXPL-UbuoBaapCEEzYOXdpp1XNyPwDhCN5AfDTcEkAlVrD1SE6zVy4tOdVEvyk4XZWb3b_GLw" },
+
+      { en: "Tonpei-yaki", jp: "とん平焼き", img: "https://encrypted-tbn1.gstatic.com/licensed-image?q=tbn:ANd9GcSp6moMC2F1haL5RClc1NV_Wbfg-ltexLVurO7N1qX8WsoUADIVUTpWazZdMtENzyLiPkchTNkAAPEArew" },
+      { en: "Akashiyaki", jp: "明石焼き", img: "https://encrypted-tbn2.gstatic.com/licensed-image?q=tbn:ANd9GcRfZzMHjzHkfsH1Pa3Js6WBw1PKDK5Mid7SL__GxReMYr3GFH1gX17SA9GH0bU9foYhz-0rgBjl2ceACHI" },
+      { en: "Osaka Curry", jp: "大阪カレー", img: "https://encrypted-tbn3.gstatic.com/licensed-image?q=tbn:ANd9GcQz_1qUlFPsmUJOd9iVRXDdB3uTnvRFjuG23S95NF1YFN5mRuYf6PRFczKleFmaXWKfemUxs8HxwNBtfOk" },
+      { en: "Dohtonbori Ramen", jp: "道頓堀ラーメン", img: "https://encrypted-tbn1.gstatic.com/licensed-image?q=tbn:ANd9GcQHW3R7zF4KHJSZKlEmixpADi5wHT9vBROxZxE-3IarkCA2Pvs81iEQ3Ztux-WbiOaTbTl3luYBxti1YDY" },
+      { en: "Glico Snack", jp: "グリコ菓子", img: "https://encrypted-tbn1.gstatic.com/licensed-image?q=tbn:ANd9GcQo8oinV-W0h_ByuioDSOwUyUipUddE3z8Q9ikSqjTIi5-NfdKCXAdB_oot1djAWn2-Sk0iiBlb5qxw1BM" }
     ];
 
+    // State Variables
+    let currentLang = 'en'; // 'en' or 'jp'
+    let showImages = true;
+    let isSharedMode = false;
+    let checkedSet = new Set([12]); // Default FREE SPACE checked
+
+    // URL Param Checking
     const urlParams = new URLSearchParams(window.location.search);
     const sharedData = urlParams.get('share');
 
-    let isSharedMode = false;
-    let checkedSet = new Set([12]); // Default FREE SPACE
-
     if (sharedData !== null) {
-      // 1. READ-ONLY MODE: Viewing someone else's shared link
       isSharedMode = true;
       const indices = sharedData ? sharedData.split(',').map(Number) : [];
       checkedSet = new Set(indices);
     } else {
-      // 2. PERSONAL MODE: Load user's local progress
       const saved = localStorage.getItem('my_osaka_bingo_progress');
       if (saved) {
         checkedSet = new Set(JSON.parse(saved));
@@ -142,40 +287,74 @@
     const banner = document.getElementById('banner');
     const resetBtn = document.getElementById('reset-btn');
     const myBoardBtn = document.getElementById('my-board-btn');
-    const subHeading = document.getElementById('sub-heading');
+    const langBtn = document.getElementById('lang-btn');
+    const imgBtn = document.getElementById('img-btn');
 
     function render() {
       grid.innerHTML = '';
 
+      // Toggle container class for images
+      if (showImages) {
+        grid.classList.remove('hide-images');
+        imgBtn.classList.add('active');
+        imgBtn.textContent = 'Images: ON';
+      } else {
+        grid.classList.add('hide-images');
+        imgBtn.classList.remove('active');
+        imgBtn.textContent = 'Images: OFF';
+      }
+
+      langBtn.textContent = currentLang === 'en' ? 'Lang: EN' : 'Lang: JP';
+
       if (isSharedMode) {
         banner.style.display = 'block';
-        banner.textContent = " You're viewing a shared progress board!";
-        subHeading.textContent = "Here is what has been checked off on this shared list:";
         resetBtn.style.display = 'none';
-        myBoardBtn.style.display = 'inline-block';
+        myBoardBtn.style.display = 'block';
       } else {
         banner.style.display = 'none';
-        subHeading.textContent = "Tap items to mark off what you've eaten!";
-        resetBtn.style.display = 'inline-block';
+        resetBtn.style.display = 'block';
         myBoardBtn.style.display = 'none';
       }
 
       items.forEach((item, idx) => {
         const tile = document.createElement('div');
-        tile.className = `tile ${checkedSet.has(idx) ? 'checked' : ''} ${idx === 12 ? 'free' : ''}`;
-        tile.textContent = item;
+        tile.className = `tile ${checkedSet.has(idx) ? 'checked' : ''}`;
         
-        // Disable tile toggling if viewing a shared link
+        // Render Image if URL exists
+        if (item.img) {
+          const imgEl = document.createElement('img');
+          imgEl.src = item.img;
+          imgEl.alt = item.en;
+          imgEl.loading = "lazy";
+          tile.appendChild(imgEl);
+        }
+
+        // Render Text Label
+        const textEl = document.createElement('div');
+        textEl.className = 'tile-text';
+        textEl.textContent = currentLang === 'en' ? item.en : item.jp;
+        tile.appendChild(textEl);
+        
         tile.onclick = () => {
           if (!isSharedMode) {
             toggleTile(idx);
           } else {
-            alert("You are in view mode! Click 'Back to My Board' to edit your own list.");
+            alert("Viewing shared mode! Tap 'Back to My Board' to edit yours.");
           }
         };
 
         grid.appendChild(tile);
       });
+    }
+
+    function toggleLanguage() {
+      currentLang = currentLang === 'en' ? 'jp' : 'en';
+      render();
+    }
+
+    function toggleImages() {
+      showImages = !showImages;
+      render();
     }
 
     function toggleTile(idx) {
@@ -190,27 +369,26 @@
 
     function shareProgress() {
       let indicesToShare = Array.from(checkedSet);
-      
-      // If sharing while in personal mode, pull from local storage
       if (!isSharedMode) {
         const saved = localStorage.getItem('my_osaka_bingo_progress');
-        if (saved) {
-          indicesToShare = JSON.parse(saved);
-        }
+        if (saved) indicesToShare = JSON.parse(saved);
       }
 
       const baseUrl = window.location.origin + window.location.pathname;
       const shareUrl = `${baseUrl}?share=${indicesToShare.join(',')}`;
 
-      navigator.clipboard.writeText(shareUrl).then(() => {
-        alert("Progress link copied to clipboard! Send this URL to your friend.");
-      }).catch(() => {
-        prompt("Copy this URL to share your progress:", shareUrl);
-      });
+      if (navigator.share) {
+        navigator.share({ title: 'Osaka Food Bingo Progress', url: shareUrl }).catch(() => {});
+      } else {
+        navigator.clipboard.writeText(shareUrl).then(() => {
+          alert("Progress link copied! Send it to your friend.");
+        }).catch(() => {
+          prompt("Copy this URL to share:", shareUrl);
+        });
+      }
     }
 
     function loadMyBoard() {
-      // Clear URL params and reload personal mode
       window.location.href = window.location.origin + window.location.pathname;
     }
 
